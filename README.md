@@ -1,8 +1,13 @@
 # BU EC535 Project - Smart Gardening System (SGS)
 Abdulaziz AlMailam & Samuel Gulinello
 
+## Abstract
 
-Installation method for BU ENG students on the ENG Grid:
+This project was intended to bring together as many topics from EC535 as well as solve a real world problem. Bringing together kernel modules, I2C communication, user space applications, and a QT interface, we developed a system to monitor and provide care to an indoor plant growing system. The product is designed to be autonomous while providing the user with real time metrics displayed on an LCD. By the end of the project we had successfully brought together the different hardware and software components to create a working proof of concept. We successfully processed and presented the input data and simulated the output device functionality.
+
+
+## Installation
+This installation method is for BU ENG affiliates with access to the ENG Grid and assumes basic knowledge of the Linux command line.
 
 1. Download all the given files and verify your current directory
 2. Compile the gpio.c kernel module in the /km directory using the given Makefile
