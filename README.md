@@ -8,3 +8,4 @@ Installation method for BU ENG students on the ENG Grid:
 2. Run *qmake* with the necessary target, etc.
 3. Run *make* with your newly created Makefile from step 2
 4. Move your newly created executable called "ec535project" onto the BeagleBone Black, as well as the given shell scripts (pumpToggle.sh, LEDToggle.sh, and ...)
+5. (on the BB) Assuming the sensors are already connected, run the executable!
