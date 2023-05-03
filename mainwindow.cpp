@@ -1,3 +1,9 @@
+// BU EC535 Project - Smart Gardening System (SGS)
+// Abdulaziz AlMailam & Samuel Gulinello
+
+// INCLUDE DIRECTIVES
+
+// QT
 #include "mainwindow.h"
 #include <QLabel>
 #include <QTimer>
@@ -5,14 +11,7 @@
 #include <QPushButton>
 #include <QProcess>
 
-
-
-
-
-
-
-
-
+// LibC/Linux
 #include <stdio.h>
 #include <stdlib.h>
 #include <linux/i2c-dev.h>
@@ -23,36 +22,31 @@
 
 using namespace std;
 
+
+
+// Program definitions
 #define ADDRESS_BME 0x76
+#define ADDRESS_ADS 0x48
+
+char *filename = "/dev/i2c-2"; // I2C Device bus connected to the sensors
+int file;
 
 typedef signed int BME280_S32_t;
 typedef unsigned int BME280_U32_t;
 typedef long long signed int BME280_S64_t;
 
-BME280_S32_t t_fine;
-
-BME280_S32_t temp_global = 22.5, humidity_global = 40;
-
+// Global sensor value inputs
+BME280_S32_t t_fine, temp_global = 22.5, humidity_global = 40;
 int water_global = 0;
 
-
-
-QLabel *temp_humidity_label;
-
-
+// QT text label for temperature, humidity, and water level
+QLabel *temp_humidity_water_label;
 
 
 
+// ADS1115 I2C ADC SENSOR
 
-
-
-
-
-#define ADDRESS_ADS 0x48
-
-int file;
-char *filename = "/dev/i2c-2";
-
+// Helper for ADS1115 to map and convert raw readings
 int ads_map(int value) {
     int result = (value + 42) * 100 / 152;
     if (result < 0) {
@@ -63,6 +57,7 @@ int ads_map(int value) {
     return result;
 }
 
+// Handler for ADS1115 I2C ADC Interactions
 int ADS1115_read() {
     /* Create I2C Bus*/
     if ((file = open(filename, O_RDWR)) < 0) {
@@ -110,31 +105,9 @@ int ADS1115_read() {
 
 
 
+// BME280 TEMPERATURE/HUMIDITY/PRESSURE I2C SENSOR
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// Handler for BME280 Temp/Humidity I2C Sensor Interactions
 void bme280_(BME280_S32_t *temp, BME280_S32_t *humidity) {
     /* Create I2C Bus*/
     if ((file = open(filename, O_RDWR)) < 0) {
@@ -260,6 +233,7 @@ void bme280_(BME280_S32_t *temp, BME280_S32_t *humidity) {
     close(file);
 }
 
+// Updates and returns the (global) temperature value from the sensor
 BME280_S32_t get_temp() {
     BME280_S32_t temp;
     BME280_S32_t humidity;
@@ -270,6 +244,7 @@ BME280_S32_t get_temp() {
     return temp;
 }
 
+// Updates and returns the (global) humidity value from the sensor
 BME280_S32_t get_humidity() {
     BME280_S32_t temp;
     BME280_S32_t humidity;
@@ -282,53 +257,46 @@ BME280_S32_t get_humidity() {
 
 
 
+// SIGNAL HANDLING //
+
+// Run the pumpToggle output control script to enable the pump output if the on-screen pump button is pressed
+void MainWindow::pump_button_pressed_response() { QProcess process; process.startDetached("/bin/sh", QStringList()<< "/root/project/pumpToggle.sh"); }
+
+// Run the pumpToggle output control script to disable the pump output if the on-screen pump button is released
+void MainWindow::pump_button_release_response() { QProcess process; process.startDetached("/bin/sh", QStringList()<< "/root/project/pumpToggle.sh"); }
+
+// Run the LEDToggle output control script to enable the LED output if the on-screen LED button is pressed
+void MainWindow::LED_button_pressed_response() { QProcess process; process.startDetached("/bin/sh", QStringList()<< "/root/project/LEDToggle.sh"); }
+
+// Run the LEDToggle output control script to disable the LED output if the on-screen LED button is released
+void MainWindow::LED_button_release_response() { QProcess process; process.startDetached("/bin/sh", QStringList()<< "/root/project/LEDToggle.sh"); }
 
 
 
+// TIMER FUNCTIONALITY
 
-
-
-void MainWindow::pump_button_pressed_response() {
-    QProcess process;
-    process.startDetached("/bin/sh", QStringList()<< "/root/project/pumpToggle.sh");
-}
-
-void MainWindow::pump_button_release_response() {
-    QProcess process;
-    process.startDetached("/bin/sh", QStringList()<< "/root/project/pumpToggle.sh");
-}
-
-
-void MainWindow::LED_button_pressed_response() {
-    QProcess process;
-    process.startDetached("/bin/sh", QStringList()<< "/root/project/LEDToggle.sh");
-}
-
-void MainWindow::LED_button_release_response() {
-    QProcess process;
-    process.startDetached("/bin/sh", QStringList()<< "/root/project/LEDToggle.sh");
-}
-
-
-
+// Refreshes the display after reading new temperature, humidity, and water level values from the sensors
 void MainWindow::updateDisplay() {
     temp_global = get_temp();
     humidity_global = get_humidity();
     water_global = ADS1115_read();
     string th_disp_string = "Temperature: " + std::to_string(temp_global) + "C\nHumidity: " + std::to_string(humidity_global) + "%\nWater Level: " + std::to_string(water_global) + "%";
-    temp_humidity_label -> setText(QString::fromStdString(th_disp_string));
+    temp_humidity_water_label -> setText(QString::fromStdString(th_disp_string));
 }
 
 
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-{
+
+// MAINWINDOW SYSTEM FUNCTION
+
+// MainWindow function to drive all system functionality
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 
     // INITIALIZE SENSOR DATA DISPLAY
-    temp_humidity_label = new QLabel(this);
+    temp_humidity_water_label = new QLabel(this);
     string th_disp_string = "Temperature: " + std::to_string(temp_global) + "C\nHumidity: " + std::to_string(humidity_global) + "%\nWater Level: " + std::to_string(water_global) + "%";
-    temp_humidity_label -> setGeometry(QRect(100, 30, 90, 120));
-    temp_humidity_label -> setFixedWidth(500);
+    temp_humidity_water_label -> setGeometry(QRect(100, 30, 90, 120));
+    temp_humidity_water_label -> setFixedWidth(500);
+
 
     // OUTPUT CONTROL
     QPushButton *pump_button = new QPushButton(this); // Pump is connected to GPIO67
@@ -341,39 +309,22 @@ MainWindow::MainWindow(QWidget *parent)
     MainWindow::pump_button_release_response();
     MainWindow::LED_button_release_response();
 
+    // Connect button signals to their respective slots to control the output behavior
     connect(pump_button, SIGNAL(pressed()), this, SLOT(pump_button_pressed_response()));
     connect(pump_button, SIGNAL(released()), this, SLOT(pump_button_release_response()));
-
     connect(LED_button, SIGNAL(pressed()), this, SLOT(LED_button_pressed_response()));
     connect(LED_button, SIGNAL(released()), this, SLOT(LED_button_release_response()));
 
+    // Update the position of the pump and LED buttons
     pump_button -> setGeometry(QRect(110, 150, 70, 70));
     LED_button -> setGeometry(QRect(230, 150, 70, 70));
 
 
-        // ------
-        // INPUTS
-        // ------
-
-
-        // SUPPOSED TO UPDATE TEMP AND HUMIDITY DATA HERE
-        //temp_global and humidity_global are our sensor data variables
-        //need to call get_temp() and get_humidity() so that the variables are updated
-
-
-        // -------
-        // OUTPUTS
-        // -------
-
-        // nothing really here since the buttons have signals to respond to click and release events
-
-
-        // START LOOP TIMER
-
-        QTimer *timer = new QTimer(this);
-        timer->setInterval(250);
-        connect(timer, SIGNAL(timeout()), this, SLOT(updateDisplay()));
-        timer->start();
+    // START LOOP TIMER
+    QTimer *timer = new QTimer(this);
+    timer->setInterval(250); // Timer fires every 250ms so the screen refreshes 4x every second
+    connect(timer, SIGNAL(timeout()), this, SLOT(updateDisplay()));
+    timer->start();
 }
 
 // mainwindow destructor
